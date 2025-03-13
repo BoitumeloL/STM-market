@@ -243,6 +243,12 @@
 			"methods": {
 				"constructor": {
 					"notice": "Constructor setting initial owner"
+				},
+				"getAuctionRules(uint256)": {
+					"notice": "Gets auction rules"
+				},
+				"setAuctionRules(uint256,uint256,uint256,bool)": {
+					"notice": "Sets auction rules for a specific auction"
 				}
 			},
 			"version": 1
@@ -250,7 +256,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"Energy_Tokenisation_strategy/auction.sol": "AuctionRules"
+			"Energy_Tokenisation_strategy/auctionRules.sol": "AuctionRules"
 		},
 		"evmVersion": "shanghai",
 		"libraries": {},
@@ -280,12 +286,12 @@
 				"dweb:/ipfs/Qmax9WHBnVsZP46ZxEMNRQpLQnrdE4dK8LehML1Py8FowF"
 			]
 		},
-		"Energy_Tokenisation_strategy/auction.sol": {
-			"keccak256": "0x58a92d765f846a7b3e4f4616dd8601dc1bb70c3b24aa51a836ecca910e5ea0ab",
+		"Energy_Tokenisation_strategy/auctionRules.sol": {
+			"keccak256": "0xf6a5e80964b75b4013864db64eacf889e946cf0f04e5b6fe74c92f673b65af83",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://882f829f4bef29f04f90698fc20b66cdcdf72f8b787729a3e9637ff676222381",
-				"dweb:/ipfs/QmPQueE3DBMVibmM2H1KxAZoerpPjGwZhkTwaX6edFQXme"
+				"bzz-raw://c08bfedc026e428969903d53ecfe9a572f6cc153d67249978df359379bfa8ea7",
+				"dweb:/ipfs/QmWtohwY8LrPTSVfR9HoEJh7SxhbTKZpAriVgdMoFo3CT7"
 			]
 		}
 	},

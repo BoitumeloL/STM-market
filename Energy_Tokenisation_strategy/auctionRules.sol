@@ -18,11 +18,13 @@ contract AuctionRules is Ownable {
     /// @notice Constructor setting initial owner
     constructor() Ownable(msg.sender) {}
 
+    /// @notice Sets auction rules for a specific auction
     function setAuctionRules(uint256 auctionId, uint256 duration, uint256 minIncrement, bool requiresVerification) external onlyOwner {
         auctionSettings[auctionId] = AuctionData(duration, minIncrement, requiresVerification);
         emit AuctionRulesSet(auctionId, duration, minIncrement, requiresVerification);
     }
 
+    /// @notice Gets auction rules
     function getAuctionRules(uint256 auctionId) external view returns (AuctionData memory) {
         return auctionSettings[auctionId];
     }

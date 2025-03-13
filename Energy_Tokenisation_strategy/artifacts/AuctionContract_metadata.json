@@ -6,6 +6,11 @@
 	"output": {
 		"abi": [
 			{
+				"inputs": [],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "address",
@@ -112,37 +117,6 @@
 				"anonymous": false,
 				"inputs": [
 					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "auctionId",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "duration",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "minIncrement",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "bool",
-						"name": "requiresVerification",
-						"type": "bool"
-					}
-				],
-				"name": "AuctionRulesSet",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
 						"indexed": true,
 						"internalType": "uint256",
 						"name": "auctionId",
@@ -204,35 +178,6 @@
 						"type": "uint256"
 					}
 				],
-				"name": "auctionSettings",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "duration",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "minIncrement",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "requiresVerification",
-						"type": "bool"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
 				"name": "auctions",
 				"outputs": [
 					{
@@ -279,11 +224,6 @@
 						"internalType": "uint256",
 						"name": "endTime",
 						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "requiresVerification",
-						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -321,7 +261,7 @@
 					},
 					{
 						"internalType": "uint256",
-						"name": "auctionId",
+						"name": "duration",
 						"type": "uint256"
 					}
 				],
@@ -341,42 +281,6 @@
 				"name": "finalizeAuction",
 				"outputs": [],
 				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "auctionId",
-						"type": "uint256"
-					}
-				],
-				"name": "getAuctionRules",
-				"outputs": [
-					{
-						"components": [
-							{
-								"internalType": "uint256",
-								"name": "duration",
-								"type": "uint256"
-							},
-							{
-								"internalType": "uint256",
-								"name": "minIncrement",
-								"type": "uint256"
-							},
-							{
-								"internalType": "bool",
-								"name": "requiresVerification",
-								"type": "bool"
-							}
-						],
-						"internalType": "struct AuctionRules.AuctionData",
-						"name": "",
-						"type": "tuple"
-					}
-				],
-				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -415,34 +319,6 @@
 			{
 				"inputs": [
 					{
-						"internalType": "uint256",
-						"name": "auctionId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "duration",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "minIncrement",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "requiresVerification",
-						"type": "bool"
-					}
-				],
-				"name": "setAuctionRules",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
 						"internalType": "address",
 						"name": "newOwner",
 						"type": "address"
@@ -455,7 +331,7 @@
 			}
 		],
 		"devdoc": {
-			"details": "Inherits AuctionRules & manages auctions, bids, and escrow",
+			"details": "Manages all auctions and enforces rules",
 			"errors": {
 				"OwnableInvalidOwner(address)": [
 					{
@@ -480,7 +356,7 @@
 					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
 				}
 			},
-			"title": "Energy Market Contract (Acts as Escrow)",
+			"title": "Auction Contract",
 			"version": 1
 		},
 		"userdoc": {
@@ -495,14 +371,8 @@
 				"finalizeAuction(uint256)": {
 					"notice": "Finalizes an auction, transferring tokens & ETH, refunding losing bidders"
 				},
-				"getAuctionRules(uint256)": {
-					"notice": "Gets auction rules"
-				},
 				"placeBid(uint256)": {
 					"notice": "Allows users to place bids and locks ETH in escrow"
-				},
-				"setAuctionRules(uint256,uint256,uint256,bool)": {
-					"notice": "Sets auction rules for a specific auction"
 				}
 			},
 			"version": 1
@@ -510,7 +380,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"Energy_Tokenisation_strategy/market.sol": "EnergyMarket"
+			"Energy_Tokenisation_strategy/auctionRules.sol": "AuctionContract"
 		},
 		"evmVersion": "shanghai",
 		"libraries": {},
@@ -549,19 +419,11 @@
 			]
 		},
 		"Energy_Tokenisation_strategy/auctionRules.sol": {
-			"keccak256": "0xf6a5e80964b75b4013864db64eacf889e946cf0f04e5b6fe74c92f673b65af83",
+			"keccak256": "0x2427351878a61cfc01c9bbce650ac7ee50d7a269c69441df348c0e4e95d27449",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://c08bfedc026e428969903d53ecfe9a572f6cc153d67249978df359379bfa8ea7",
-				"dweb:/ipfs/QmWtohwY8LrPTSVfR9HoEJh7SxhbTKZpAriVgdMoFo3CT7"
-			]
-		},
-		"Energy_Tokenisation_strategy/market.sol": {
-			"keccak256": "0x1e35f639e375c0cd2212aa278ef58a680e8ea6a717aae3e8b0bbb1fdc297033e",
-			"license": "MIT",
-			"urls": [
-				"bzz-raw://e3bd7dad2c8dcbf7fc6995fba177db35de5f76bf8473b26120b3506299ae843b",
-				"dweb:/ipfs/Qme8YDDZfSSHesViCfFwFH77DQzRUERU4Pom2dZjcajeZr"
+				"bzz-raw://c6eea833128a972aab233d40888cfa5f254bce08dd1488c91d32939ea3ecf225",
+				"dweb:/ipfs/QmTK3zAVBAZXSBwpw68DekCuXZsiMmZtZ6bedPW8WLc1t6"
 			]
 		}
 	},

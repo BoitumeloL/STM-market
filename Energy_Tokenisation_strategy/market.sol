@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./auctionRules.sol";
 
 /// @title Energy Market Contract (Acts as Escrow)
-/// @dev Manages energy token transactions, auctions, and escrow functions
-contract EnergyMarket is Ownable {
+/// @dev Inherits AuctionRules & manages auctions, bids, and escrow
+contract EnergyMarket is AuctionRules {
     struct Bid {
         address bidder;
         uint256 amount;
@@ -21,29 +21,32 @@ contract EnergyMarket is Ownable {
         bool active;
         mapping(uint256 => Bid) bids;
         uint256 bidCount;
+        uint256 highestBid;
+        address highestBidder;
+        uint256 endTime;
+        bool requiresVerification;
     }
 
     mapping(uint256 => Auction) public auctions;
     uint256 public auctionCounter;
+    // uint256 auctionstarttime = block.timestamp;
 
-    /// @notice Constructor, passing msg.sender to Ownable as the initial owner
-    constructor() Ownable(msg.sender) {
-        // The Ownable constructor will now properly set the deployer as the owner
-    }
-
-    event AuctionCreated(uint256 indexed auctionId, address seller, address token, uint256 amount, uint256 minPrice);
+    event AuctionCreated(uint256 indexed auctionId, address seller, address token, uint256 amount, uint256 minPrice, uint256 endTime);
     event NewBid(uint256 indexed auctionId, address bidder, uint256 bidAmount);
     event AuctionFinalized(uint256 indexed auctionId, address winner, uint256 winningBid);
     event AuctionCancelled(uint256 indexed auctionId);
 
     /// @notice Creates an auction and locks tokens in escrow
-    function createAuction(IERC20 token, uint256 amount, uint256 minPrice) external {
+    function createAuction(IERC20 token, uint256 amount, uint256 minPrice, uint256 auctionId) external {
         require(amount > 0, "Amount must be greater than zero");
         require(minPrice > 0, "Minimum price must be greater than zero");
         require(token.balanceOf(msg.sender) >= amount, "Insufficient token balance");
         require(token.allowance(msg.sender, address(this)) >= amount, "Token allowance too low");
 
         token.transferFrom(msg.sender, address(this), amount);  // 🔒 LOCKING tokens in escrow
+
+        // Get auction rules from AuctionRules contract
+        AuctionData memory rules = auctionSettings[auctionId];
 
         Auction storage auction = auctions[auctionCounter];
         auction.seller = msg.sender;
@@ -52,8 +55,12 @@ contract EnergyMarket is Ownable {
         auction.minPrice = minPrice;
         auction.active = true;
         auction.bidCount = 0;
+        auction.highestBid = 0;
+        auction.highestBidder = address(0);
+        auction.endTime = block.timestamp + rules.duration * 1 minutes;
+        auction.requiresVerification = rules.requiresVerification;
 
-        emit AuctionCreated(auctionCounter, msg.sender, address(token), amount, minPrice);
+        emit AuctionCreated(auctionCounter, msg.sender, address(token), amount, minPrice, auction.endTime);
         auctionCounter++;
     }
 
@@ -61,7 +68,12 @@ contract EnergyMarket is Ownable {
     function placeBid(uint256 auctionId) external payable {
         Auction storage auction = auctions[auctionId];
         require(auction.active, "Auction inactive");
+        require(block.timestamp < auction.endTime, "Auction has ended");
         require(msg.value >= auction.minPrice, "Bid too low");
+
+        // Get auction rules
+        AuctionData memory rules = auctionSettings[auctionId];
+        require(msg.value >= auction.highestBid + rules.minIncrement, "Bid increment too low");
 
         auction.bids[auction.bidCount] = Bid({
             bidder: msg.sender,
@@ -70,6 +82,10 @@ contract EnergyMarket is Ownable {
         });
         auction.bidCount++;
 
+        // Update highest bid
+        auction.highestBid = msg.value;
+        auction.highestBidder = msg.sender;
+
         emit NewBid(auctionId, msg.sender, msg.value);
     }
 
@@ -77,23 +93,12 @@ contract EnergyMarket is Ownable {
     function finalizeAuction(uint256 auctionId) external {
         Auction storage auction = auctions[auctionId];
         require(auction.active, "Auction inactive");
+        require(block.timestamp >= auction.endTime, "Auction not yet ended");
         require(msg.sender == auction.seller || msg.sender == owner(), "Unauthorized");
 
         auction.active = false;
-
-        // Find the winning bid (oldest highest bid)
-        address winner;
-        uint256 highestBid = 0;
-        uint256 earliestTimestamp = block.timestamp;
-
-        for (uint256 i = 0; i < auction.bidCount; i++) {
-            if (auction.bids[i].amount > highestBid || 
-                (auction.bids[i].amount == highestBid && auction.bids[i].timestamp < earliestTimestamp)) {
-                highestBid = auction.bids[i].amount;
-                winner = auction.bids[i].bidder;
-                earliestTimestamp = auction.bids[i].timestamp;
-            }
-        }
+        address winner = auction.highestBidder;
+        uint256 highestBid = auction.highestBid;
 
         require(winner != address(0), "No valid bids");
 
