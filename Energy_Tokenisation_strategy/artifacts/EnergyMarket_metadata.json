@@ -195,19 +195,14 @@
 						"type": "uint256"
 					},
 					{
-						"internalType": "address",
-						"name": "highestBidder",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "highestBid",
-						"type": "uint256"
-					},
-					{
 						"internalType": "bool",
 						"name": "active",
 						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "bidCount",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -351,7 +346,7 @@
 					"notice": "Creates an auction and locks tokens in escrow"
 				},
 				"finalizeAuction(uint256)": {
-					"notice": "Finalizes an auction, transferring tokens & ETH"
+					"notice": "Finalizes an auction, transferring tokens & ETH, refunding losing bidders"
 				},
 				"placeBid(uint256)": {
 					"notice": "Allows users to place bids and locks ETH in escrow"
@@ -401,11 +396,11 @@
 			]
 		},
 		"Energy_Tokenisation_strategy/market.sol": {
-			"keccak256": "0x109f770c3b9a553915bdd88c8da91d60c847aa6be775c80333f95063a35d55d6",
+			"keccak256": "0x34853195e8b9e7514e3fefcf47a837b575cb525ec6586d1cfe111312df1e26f9",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://10dc84a81586bd7b842034df121c19f65a7b3c2d20b08e4288103a5db332ea2b",
-				"dweb:/ipfs/QmQJ5kTN9XPBXmnjF5hmRptVBSvdmbkirVQt8e6VQLpSUU"
+				"bzz-raw://00b4179347b395fb278a504cdffff449b6bc9a983a5e14912e182a65a529763a",
+				"dweb:/ipfs/QmPUmnwnbqsPCfqqTd8hSBweShGjcZtKv7wPZPD4nnecgc"
 			]
 		}
 	},

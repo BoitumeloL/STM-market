@@ -7,29 +7,35 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title Energy Market Contract (Acts as Escrow)
 /// @dev Manages energy token transactions, auctions, and escrow functions
 contract EnergyMarket is Ownable {
+    struct Bid {
+        address bidder;
+        uint256 amount;
+        uint256 timestamp;
+    }
+
     struct Auction {
         address seller;
         IERC20 token;
         uint256 amount;
         uint256 minPrice;
-        address highestBidder;
-        uint256 highestBid;
         bool active;
+        mapping(uint256 => Bid) bids;
+        uint256 bidCount;
     }
 
     mapping(uint256 => Auction) public auctions;
     uint256 public auctionCounter;
 
-    event AuctionCreated(uint256 indexed auctionId, address seller, address token, uint256 amount, uint256 minPrice);
-    event NewBid(uint256 indexed auctionId, address bidder, uint256 bidAmount);
-    event AuctionFinalized(uint256 indexed auctionId, address winner, uint256 winningBid);
-    event AuctionCancelled(uint256 indexed auctionId);
-    
     /// @notice Constructor, passing msg.sender to Ownable as the initial owner
     constructor() Ownable(msg.sender) {
         // The Ownable constructor will now properly set the deployer as the owner
     }
-    
+
+    event AuctionCreated(uint256 indexed auctionId, address seller, address token, uint256 amount, uint256 minPrice);
+    event NewBid(uint256 indexed auctionId, address bidder, uint256 bidAmount);
+    event AuctionFinalized(uint256 indexed auctionId, address winner, uint256 winningBid);
+    event AuctionCancelled(uint256 indexed auctionId);
+
     /// @notice Creates an auction and locks tokens in escrow
     function createAuction(IERC20 token, uint256 amount, uint256 minPrice) external {
         require(amount > 0, "Amount must be greater than zero");
@@ -39,15 +45,13 @@ contract EnergyMarket is Ownable {
 
         token.transferFrom(msg.sender, address(this), amount);  // 🔒 LOCKING tokens in escrow
 
-        auctions[auctionCounter] = Auction({
-            seller: msg.sender,
-            token: token,
-            amount: amount,
-            minPrice: minPrice,
-            highestBidder: address(0),
-            highestBid: 0,
-            active: true
-        });
+        Auction storage auction = auctions[auctionCounter];
+        auction.seller = msg.sender;
+        auction.token = token;
+        auction.amount = amount;
+        auction.minPrice = minPrice;
+        auction.active = true;
+        auction.bidCount = 0;
 
         emit AuctionCreated(auctionCounter, msg.sender, address(token), amount, minPrice);
         auctionCounter++;
@@ -57,29 +61,59 @@ contract EnergyMarket is Ownable {
     function placeBid(uint256 auctionId) external payable {
         Auction storage auction = auctions[auctionId];
         require(auction.active, "Auction inactive");
-        require(msg.value > auction.highestBid && msg.value >= auction.minPrice, "Bid too low");
+        require(msg.value >= auction.minPrice, "Bid too low");
 
-        if (auction.highestBid > 0) {
-            payable(auction.highestBidder).transfer(auction.highestBid);  // Refund previous highest bidder
-        }
-
-        auction.highestBidder = msg.sender;
-        auction.highestBid = msg.value;
+        auction.bids[auction.bidCount] = Bid({
+            bidder: msg.sender,
+            amount: msg.value,
+            timestamp: block.timestamp
+        });
+        auction.bidCount++;
 
         emit NewBid(auctionId, msg.sender, msg.value);
     }
 
-    /// @notice Finalizes an auction, transferring tokens & ETH
+    /// @notice Finalizes an auction, transferring tokens & ETH, refunding losing bidders
     function finalizeAuction(uint256 auctionId) external {
         Auction storage auction = auctions[auctionId];
         require(auction.active, "Auction inactive");
         require(msg.sender == auction.seller || msg.sender == owner(), "Unauthorized");
 
         auction.active = false;
-        auction.token.transfer(auction.highestBidder, auction.amount);  // 🔓 RELEASING tokens
-        payable(auction.seller).transfer(auction.highestBid);          // 🔓 RELEASING ETH
 
-        emit AuctionFinalized(auctionId, auction.highestBidder, auction.highestBid);
+        // Find the winning bid (oldest highest bid)
+        address winner;
+        uint256 highestBid = 0;
+        uint256 earliestTimestamp = block.timestamp;
+
+        for (uint256 i = 0; i < auction.bidCount; i++) {
+            if (auction.bids[i].amount > highestBid || 
+                (auction.bids[i].amount == highestBid && auction.bids[i].timestamp < earliestTimestamp)) {
+                highestBid = auction.bids[i].amount;
+                winner = auction.bids[i].bidder;
+                earliestTimestamp = auction.bids[i].timestamp;
+            }
+        }
+
+        require(winner != address(0), "No valid bids");
+
+        // Transfer tokens to the winner
+        auction.token.transfer(winner, auction.amount);
+
+        // Transfer ETH to the seller
+        payable(auction.seller).transfer(highestBid);
+
+        // Refund all losing bidders
+        for (uint256 i = 0; i < auction.bidCount; i++) {
+            address bidder = auction.bids[i].bidder;
+            uint256 bidAmount = auction.bids[i].amount;
+
+            if (bidder != winner) {
+                payable(bidder).transfer(bidAmount);
+            }
+        }
+
+        emit AuctionFinalized(auctionId, winner, highestBid);
     }
 
     /// @notice Cancels an auction and refunds the seller
